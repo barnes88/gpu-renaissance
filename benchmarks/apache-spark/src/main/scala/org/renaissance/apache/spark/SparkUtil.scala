@@ -16,6 +16,9 @@ trait SparkUtil {
 
   val winUtils = "/winutils.exe"
 
+  val gpuRapidsJars : Seq[String]= Seq( "/opt/sparkRapidsPlugin/cudf-0.14-cuda10-1.jar",
+                                        "/opt/sparkRapidsPlugin/rapids-4-spark_2.12-0.1.0.jar")
+
   def setUpSparkContext(
     dirPath: Path,
     threadsPerExecutor: Int,
@@ -24,12 +27,18 @@ trait SparkUtil {
     setUpHadoop(dirPath)
     val conf = new SparkConf()
       .setAppName(benchName)
-      .setMaster(s"local[$threadsPerExecutor]")
+      .setMaster(s"local[$threadsPerExecutor]") // changed to single cpu thread
       .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
       .set("spark.driver.bindAddress", "127.0.0.1")
-      .set("spark.executor.instances", "4")
+      .set("spark.executor.instances", "4") // changed to 1 executor
       .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
+      // Adding RAPIDS GPU confs
+      .set("spark.executor.extraClassPath", gpuRapidsJars(0)+":"+gpuRapidsJars(1))
+      .set("spark.rapids.sql.concurrentGpuTasks", "1")
+      .set("spark.rapids.memory.pinnedPool.size", "2G")
+      .set("spark.plugins", "com.nvidia.spark.SQLPlugin")
+      .setJars(gpuRapidsJars)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
     sc
