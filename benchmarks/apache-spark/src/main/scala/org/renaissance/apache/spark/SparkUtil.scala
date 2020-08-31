@@ -33,6 +33,8 @@ trait SparkUtil {
       .set("spark.driver.bindAddress", "127.0.0.1")
       .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
       // Adding RAPIDS GPU confs
+      .set("spark.sql.rapids.sql.enabled", "true")
+      .set("spark.rapids.sql.incompatibleOps.enabled", "true")
       .set("spark.executor.instances", "1") // changed to 1 executor
       .set("spark.executor.cores", "1")
       .set("spark.driver.memory", "10g")
