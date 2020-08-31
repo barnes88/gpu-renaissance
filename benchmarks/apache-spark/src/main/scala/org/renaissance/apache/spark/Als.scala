@@ -6,9 +6,12 @@ import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
-import org.apache.spark.mllib.recommendation.Rating
+import org.apache.spark.ml.recommendation.ALSModel
+import org.apache.spark.ml.recommendation.ALS.Rating
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.ml.param.ParamMap
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -51,9 +54,11 @@ final class Als extends Benchmark with SparkUtil {
 
   var sc: SparkContext = _
 
-  var factModel: MatrixFactorizationModel = _
+  //val spark: SparkSession = _
 
-  var ratings: RDD[Rating] = _
+  var factModel: ALSModel = _
+
+  var ratings: DataFrame = _
 
   var tempDirPath: Path = _
 
@@ -70,12 +75,16 @@ final class Als extends Benchmark with SparkUtil {
   }
 
   def loadData() = {
-    ratings = sc
-      .textFile(bigInputFile.toString)
+    val spark = SparkSession.builder.config(sc.getConf).getOrCreate()
+    import spark.implicits._
+    ratings = spark
+      .read.textFile(bigInputFile.toString)
       .map { line =>
         val parts = line.split("::")
-        Rating(parts(0).toInt, parts(1).toInt, parts(2).toDouble)
+        Rating(parts(0).toInt, parts(1).toInt, parts(2).toFloat)
       }
+      //.map(parseRating)
+      .toDF()
       .cache()
   }
 
@@ -86,24 +95,24 @@ final class Als extends Benchmark with SparkUtil {
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
     prepareInput()
     loadData()
-    ensureCaching(ratings)
+    //ensureCaching(ratings)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     // Dump output.
-    factModel.userFeatures
-      .map {
-        case (user, features) => s"$user: ${features.mkString(", ")}"
-      }
-      .saveAsTextFile(outputPath.toString)
+    // factModel.userFeatures
+    //   .map {
+    //     case (user, features) => s"$user: ${features.mkString(", ")}"
+    //   }
+    //   .saveAsTextFile(outputPath.toString)
 
     tearDownSparkContext(sc)
     c.deleteTempDir(tempDirPath)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val als = new org.apache.spark.mllib.recommendation.ALS()
-    factModel = als.run(ratings)
+    val als = new org.apache.spark.ml.recommendation.ALS()
+    factModel = als.fit(ratings)
 
     // TODO: add proper validation of the generated model
     Validators.dummy(factModel)
