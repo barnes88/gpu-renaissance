@@ -47,7 +47,7 @@ trait SparkUtil {
       .set("spark.plugins", "com.nvidia.spark.SQLPlugin")
       .setJars(gpuRapidsJars)
       // Log events to launch sparkGUI log in browser
-      //.set("spark.eventLog.enabled", "true")
+      .set("spark.eventLog.enabled", "true")
       //.set("spark.eventLog.dir",  
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
