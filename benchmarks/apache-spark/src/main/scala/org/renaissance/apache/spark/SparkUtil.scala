@@ -16,9 +16,6 @@ trait SparkUtil {
 
   val winUtils = "/winutils.exe"
 
-  val gpuRapidsJars : Seq[String]= Seq( "/opt/sparkRapidsPlugin/cudf-0.14-cuda10-1.jar",
-                                        "/opt/sparkRapidsPlugin/rapids-4-spark_2.12-0.1.0.jar")
-
   def setUpSparkContext(
     dirPath: Path,
     threadsPerExecutor: Int,
@@ -26,7 +23,7 @@ trait SparkUtil {
   ): SparkContext = {
     setUpHadoop(dirPath)
     val conf = new SparkConf()
-      .setAppName(benchName)
+      .setAppName("gpu_"+benchName)
       .setMaster(s"local[$threadsPerExecutor]") // changed to single cpu thread
       .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
@@ -38,14 +35,12 @@ trait SparkUtil {
       .set("spark.executor.instances", "1") // changed to 1 executor
       .set("spark.executor.cores", "1")
       .set("spark.driver.memory", "10g")
-      .set("spark.executor.extraClassPath", gpuRapidsJars(0)+":"+gpuRapidsJars(1))
       .set("spark.rapids.sql.concurrentGpuTasks", "1")
       .set("spark.rapids.memory.pinnedPool.size", "2G")
       .set("spark.locality.wait", "0s")
       .set("spark.sql.files.maxPartitionBytes", "512m")
       .set("spark.sql.shuffle.partitions", "10")
       .set("spark.plugins", "com.nvidia.spark.SQLPlugin")
-      .setJars(gpuRapidsJars)
       // Log events to launch sparkGUI log in browser
       .set("spark.eventLog.enabled", "true")
       //.set("spark.eventLog.dir",  

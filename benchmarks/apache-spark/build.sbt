@@ -19,6 +19,8 @@ lazy val apacheSpark = (project in file("."))
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
       "org.apache.spark" %% "spark-mllib" % sparkVersion,
+      "com.nvidia" %% "rapids-4-spark" % "0.2.0",
+      "ai.rapids" % "cudf" % "0.15",
       "commons-io" % "commons-io" % "2.6"
     )
   )
